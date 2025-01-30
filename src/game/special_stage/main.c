@@ -20,6 +20,8 @@
 #include "constants/songs.h"
 #include "constants/tilemaps.h"
 
+#include "game/options_screen.h"
+
 #define MAX_POINTS 99900
 
 static void Task_ShowIntroScreen(void);
@@ -41,6 +43,8 @@ void sub_806C338(void);
 void sub_806CA54(void);
 void sub_806CA18(void);
 void sub_806C158(void);
+static void Task_SpecialStageCreateExitFade(void);
+static void Task_SpecialStagePauseExit(void);
 
 void CreateSpecialStage(s16 selectedCharacter, s16 level)
 {
@@ -230,6 +234,10 @@ void Task_SpecialStageMain(void)
 {
     struct SpecialStage *stage = TASK_DATA(gCurTask);
     struct SpecialStagePlayer *player = TASK_DATA(stage->playerTask);
+
+    if (stage->rings >= stage->ringsTarget) {
+        player->state = 13;
+    }
 
     if (stage->state == 6) {
 #ifndef NON_MATCHING
@@ -612,7 +620,11 @@ void sub_806C6A4(void)
         gUnknown_03005390 = 0;
         PAUSE_GRAPHICS_QUEUE();
         WriteSaveGame();
-        GameStageStart();
+        if (gGameMode == GAME_MODE_SPECIAL_STAGE) {
+            CreateSpecialStageLevelSelectScreen(gSelectedCharacter, gCurrentLevel);
+        } else {
+            GameStageStart();
+        }
     }
 }
 
@@ -678,11 +690,8 @@ void SpecialStagePauseMenuMain(void)
                 gPressedKeys &= ~A_BUTTON;
                 return;
             }
-            TasksDestroyAll();
-            PAUSE_BACKGROUNDS_QUEUE();
-            gUnknown_03005390 = 0;
-            PAUSE_GRAPHICS_QUEUE();
-            CreateTitleScreenAndSkipIntro();
+            
+            Task_SpecialStageCreateExitFade();
             return;
         }
     }
@@ -691,6 +700,42 @@ void SpecialStagePauseMenuMain(void)
         stage->paused = !stage->paused ? TRUE : FALSE;
         stage->pauseMenuCursor = 0;
     }
+}
+
+static void Task_SpecialStageCreateExitFade(void)
+{
+    struct SpecialStage *stage = TASK_DATA(gCurTask);
+    ScreenFade *fade = &stage->fade;
+    fade->window = 0;
+    fade->flags = SCREEN_FADE_FLAG_LIGHTEN;
+    fade->brightness = 0;
+    fade->speed = 0x100;
+    fade->bldAlpha = 0;
+    fade->bldCnt = (BLDCNT_TGT1_ALL | BLDCNT_EFFECT_DARKEN);
+
+    gCurTask->main = Task_SpecialStagePauseExit;
+}
+
+static void Task_SpecialStagePauseExit(void)
+{
+    struct SpecialStage *stage = TASK_DATA(gCurTask);
+    ScreenFade *fade = &stage->fade;
+
+    if (!UpdateScreenFade(fade)) {
+        return;
+    }
+
+    TasksDestroyAll();
+    PAUSE_BACKGROUNDS_QUEUE();
+    gUnknown_03005390 = 0;
+    PAUSE_GRAPHICS_QUEUE();
+    if (gGameMode == GAME_MODE_SPECIAL_STAGE) {
+        CreateSpecialStageLevelSelectScreen(gSelectedCharacter, gCurrentLevel);
+    } else {
+        GameStageStart();
+    }
+
+    return;
 }
 
 static void SpecialStageOnDestroy(UNUSED struct Task *t)

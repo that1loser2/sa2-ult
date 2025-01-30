@@ -16,6 +16,8 @@
 #include "constants/songs.h"
 #include "constants/text.h"
 
+#include "game/course_select.h"
+
 typedef struct {
     /* 0x00 */ Sprite s;
     /* 0x30 */ Sprite s2;
@@ -123,7 +125,18 @@ void Task_PauseMenuUpdate(void)
         PAUSE_BACKGROUNDS_QUEUE();
         gUnknown_03005390 = 0;
         PAUSE_GRAPHICS_QUEUE();
-        CreateTitleScreenAndSkipIntro();
+        if (gLoadedSaveGame->unlockedLevels[gSelectedCharacter] <= COURSE_INDEX(ZONE_2, ACT_1)) {
+            CreateTitleScreenAndSkipIntro();
+        } else {
+            if (gCurrentLevel == gLoadedSaveGame->unlockedLevels[gSelectedCharacter] && ACT_INDEX(gCurrentLevel) == ACT_2) {
+                CreateCourseSelectionScreen(gCurrentLevel - 1, gLoadedSaveGame->unlockedLevels[gSelectedCharacter], 0);
+            } else if (ACT_INDEX(gCurrentLevel) == ACT_BOSS && gCurrentLevel < gLoadedSaveGame->unlockedLevels[gSelectedCharacter]) {
+                CreateCourseSelectionScreen(gCurrentLevel + 1, gLoadedSaveGame->unlockedLevels[gSelectedCharacter], 0);
+            } else {
+                CreateCourseSelectionScreen(gCurrentLevel, gLoadedSaveGame->unlockedLevels[gSelectedCharacter], 0);
+            }
+            
+        }
         return;
     }
 

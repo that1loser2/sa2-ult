@@ -89,6 +89,7 @@ extern const u16 gUnknown_080D95D6[4][2];
 
 void CreateOptionsScreen(u16);
 void CreateTimeAttackLevelSelectScreen(bool16 isBossView, s16 selectedCharacter, s8 currentLevel);
+void CreateSpecialStageLevelSelectScreen(s16 selectedCharacter, s8 currentLevel);
 void CreateNewProfileScreen(void);
 void CreateNewProfileNameScreen(s16 mode);
 

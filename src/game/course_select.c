@@ -19,6 +19,8 @@
 #include "constants/animations.h"
 #include "constants/tilemaps.h"
 
+#include "game/options_screen.h"
+
 struct CourseSelectionScreen {
     ScreenFade fade;
     Background zoneMap;
@@ -82,6 +84,8 @@ static void RenderUI(struct CourseSelectionScreen *coursesScreen);
 static void RenderZoneMapPathsAndUI(struct CourseSelectionScreen *coursesScreen);
 
 static void CourseSelectionScreenOnDestroy(struct Task *t);
+
+static void Task_FadeOutAndExitToSpecialStageSelect(void);
 
 static const u16 sZoneMapPathAssets[][3] = {
     [ZONE_1] = { 6, 749, 1 },  [ZONE_2] = { 12, 750, 1 }, [ZONE_3] = { 10, 751, 1 }, [ZONE_4] = { 6, 752, 1 },
@@ -723,6 +727,15 @@ static void Task_CourseSelectMain(void)
             fade->bldAlpha = 0;
             m4aSongNumStart(SE_SELECT);
             gCurTask->main = Task_FadeOutAndExitToSelectedMultiplayerLevel;
+        } else if ((gPressedKeys & L_BUTTON) && (gPressedKeys & R_BUTTON) && IS_SINGLE_PLAYER && gLoadedSaveGame->chaosEmeralds[gSelectedCharacter] & CHAOS_EMERALD(7)) {
+            fade->window = SCREEN_FADE_USE_WINDOW_0;
+            fade->brightness = 0;
+            fade->flags = SCREEN_FADE_FLAG_LIGHTEN;
+            fade->speed = 0x180;
+            fade->bldCnt = (BLDCNT_EFFECT_DARKEN | BLDCNT_TGT1_ALL);
+            fade->bldAlpha = 0;
+            m4aSongNumStart(SE_RETURN);
+            gCurTask->main = Task_FadeOutAndExitToSpecialStageSelect;
         }
     }
 
@@ -1046,6 +1059,20 @@ static void Task_FadeOutAndExitToSelectedLevel(void)
         return;
     }
 
+    Render(coursesScreen);
+}
+
+static void Task_FadeOutAndExitToSpecialStageSelect(void)
+{
+    struct CourseSelectionScreen *coursesScreen = TASK_DATA(gCurTask);
+
+    if (UpdateScreenFade(&coursesScreen->fade) == SCREEN_FADE_COMPLETE) {
+        DestroyUI(coursesScreen);
+        gGameMode = GAME_MODE_SPECIAL_STAGE;
+        CreateSpecialStageLevelSelectScreen(gSelectedCharacter, gCurrentLevel);
+        TaskDestroy(gCurTask);
+        return;
+    }
     Render(coursesScreen);
 }
 

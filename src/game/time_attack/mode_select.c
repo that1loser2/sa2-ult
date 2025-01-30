@@ -16,6 +16,8 @@
 #include "constants/text.h"
 #include "constants/tilemaps.h"
 
+#include "game/options_screen.h"
+
 struct TimeAttackModeSelectionScreen {
     Background unk0;
     Background unk40;
@@ -463,7 +465,7 @@ static void Task_HandleModeSelectedExit(void)
     PAUSE_BACKGROUNDS_QUEUE();
     gUnknown_03005390 = 0;
     PAUSE_GRAPHICS_QUEUE();
-    CreateCharacterSelectionScreen(0, gLoadedSaveGame->unlockedCharacters & 0x10);
+    CreateTimeAttackLevelSelectScreen((gGameMode & GAME_MODE_BOSS_TIME_ATTACK) ? 1 : 0, gSelectedCharacter, gCurrentLevel);
 }
 
 static void RenderUI(struct TimeAttackModeSelectionScreen *modeScreen)

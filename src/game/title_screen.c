@@ -650,6 +650,11 @@ static void Task_IntroFadeInSegaLogoAnim(void)
     TitleScreen *titleScreen = TASK_DATA(gCurTask);
     WavesBackgroundAnim(titleScreen);
 
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
+        SkipIntro(titleScreen);
+        return;
+    }
+
     gBldRegs.bldAlpha = FadeInBlend(titleScreen->animFrame);
 
     if (titleScreen->animFrame >= 16) {
@@ -668,6 +673,11 @@ static void Task_IntroFadeOutSegaLogoAnim(void)
 {
     TitleScreen *titleScreen = TASK_DATA(gCurTask);
     WavesBackgroundAnim(titleScreen);
+
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
+        SkipIntro(titleScreen);
+        return;
+    }
 
     gBldRegs.bldAlpha = FadeOutBlend(titleScreen->animFrame * 2);
 
@@ -688,6 +698,11 @@ static void Task_IntroStartSonicTeamLogoAnim(void)
     Background *bg;
 
     WavesBackgroundAnim(titleScreen);
+
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
+        SkipIntro(titleScreen);
+        return;
+    }
 
     if (titleScreen->animFrame == 1) {
         // TODO: some macro for this
@@ -724,6 +739,11 @@ static void Task_IntroFadeInSonicTeamLogoAnim(void)
     TitleScreen *titleScreen = TASK_DATA(gCurTask);
     WavesBackgroundAnim(titleScreen);
 
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
+        SkipIntro(titleScreen);
+        return;
+    }
+
     gBldRegs.bldAlpha = FadeInBlend(titleScreen->animFrame);
 
     if (titleScreen->animFrame >= 16) {
@@ -742,6 +762,11 @@ static void Task_IntroFadeOutSonicTeamLogoAnim(void)
 {
     TitleScreen *titleScreen = TASK_DATA(gCurTask);
     WavesBackgroundAnim(titleScreen);
+
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
+        SkipIntro(titleScreen);
+        return;
+    }
 
     gBldRegs.bldAlpha = FadeOutBlend(titleScreen->animFrame * 2);
 
@@ -1021,7 +1046,7 @@ static void Task_PressStartMenuMain(void)
     }
     DisplaySprite(&titleScreen->unkC0);
 
-    if (gPressedKeys & START_BUTTON) {
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
         m4aSongNumStart(SE_SELECT);
         titleScreen->animFrame = 0;
         titleScreen->menuCursor = PlayModeMenuIndex(MENU_ITEM_SINGLE_PLAYER);
@@ -1874,6 +1899,11 @@ static void Task_IntroShowSegaLogo(void)
     TitleScreen *titleScreen = TASK_DATA(gCurTask);
     WavesBackgroundAnim(titleScreen);
 
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
+        SkipIntro(titleScreen);
+        return;
+    }
+
     if (titleScreen->animFrame > FRAME_TIME_SECONDS(2)) {
         titleScreen->animFrame = 0;
         gCurTask->main = Task_IntroFadeOutSegaLogoAnim;
@@ -1885,6 +1915,11 @@ static void Task_IntroShowSonicTeamLogo(void)
 {
     TitleScreen *titleScreen = TASK_DATA(gCurTask);
     WavesBackgroundAnim(titleScreen);
+
+    if (gPressedKeys & (A_BUTTON | START_BUTTON)) {
+        SkipIntro(titleScreen);
+        return;
+    }
 
     // After 120 frames
     if (titleScreen->animFrame > FRAME_TIME_SECONDS(2)) {

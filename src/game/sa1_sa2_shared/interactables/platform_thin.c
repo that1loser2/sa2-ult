@@ -176,6 +176,8 @@ static void Task_PlatformThinMain(void)
                     anim -= gPlayerCharacterIdleAnims[player->character];
                     if (charState == CHARSTATE_TRICK_DOWN && anim == SA2_CHAR_ANIM_51 && variant == 1 && player->qSpeedAirY > 0) {
                         player->moveState &= ~MOVESTATE_STOOD_ON_OBJ;
+                        player->moveState |= MOVESTATE_IN_AIR;
+                        player->qSpeedAirY = player->qSpeedAirY >> 1;
                         CreatePlatformBreakParticles(x, y);
                         something = TRUE;
                     }

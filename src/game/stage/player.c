@@ -412,15 +412,15 @@ static const s16 sTrickAccel[NUM_TRICK_DIRS][NUM_CHARACTERS][2] = {
     },
     [TRICK_DIR_DOWN] = {
         [CHARACTER_SONIC] = {Q_8_8(0.00), Q_8_8(1.00)},
-        [CHARACTER_CREAM] = {Q_8_8(0.00), Q_8_8(0.50)},
-        [CHARACTER_TAILS] = {Q_8_8(0.00), Q_8_8(0.50)},
+        [CHARACTER_CREAM] = {Q_8_8(0.00), Q_8_8(3.00)},
+        [CHARACTER_TAILS] = {Q_8_8(0.00), Q_8_8(2.00)},
         [CHARACTER_KNUCKLES] = {Q_8_8(0.00), Q_8_8(1.00)},
         [CHARACTER_AMY] = {Q_8_8(0.00), Q_8_8(1.00)},
     },
     [TRICK_DIR_FORWARD] = {
         [CHARACTER_SONIC] = {Q_8_8(6.00), Q_8_8(0.00)},
-        [CHARACTER_CREAM] = {Q_8_8(4.00), Q_8_8(-2.50)},
-        [CHARACTER_TAILS] = {Q_8_8(4.00), Q_8_8(-2.50)},
+        [CHARACTER_CREAM] = {Q_8_8(6.00), Q_8_8(-1.50)},
+        [CHARACTER_TAILS] = {Q_8_8(6.00), Q_8_8(-2.50)},
         [CHARACTER_KNUCKLES] = {Q_8_8(6.00), Q_8_8(0.00)},
         [CHARACTER_AMY] = {Q_8_8(6.00), Q_8_8(0.00)},
     },
@@ -429,7 +429,7 @@ static const s16 sTrickAccel[NUM_TRICK_DIRS][NUM_CHARACTERS][2] = {
         [CHARACTER_CREAM] = {Q_8_8(-3.50), Q_8_8(-3.00)},
         [CHARACTER_TAILS] = {Q_8_8(-3.50), Q_8_8(-3.00)},
         [CHARACTER_KNUCKLES] = {Q_8_8(-5.00), Q_8_8(0.00)},
-        [CHARACTER_AMY] = {Q_8_8(-3.50), Q_8_8(-2.00)},
+        [CHARACTER_AMY] = {Q_8_8(-4.50), Q_8_8(-3.00)},
     },
 };
 
@@ -2912,6 +2912,7 @@ void sub_80236C8(Player *p)
 
     airX = p->qSpeedAirX;
     airX2 = (airX >> 5);
+    
 
     if (airX2 < 0) {
         airX = (airX - airX2);
@@ -5717,10 +5718,10 @@ void Player_DefaultTrick(Player *p)
     PLAYERFN_UPDATE_ROTATION(p);
     PLAYERFN_MAYBE_TRANSITION_TO_GROUND(p);
 
-    if (!(p->moveState & MOVESTATE_IN_AIR) && (p->character == CHARACTER_KNUCKLES) && (p->trickDir == TRICK_DIR_FORWARD)) {
+    /*if (!(p->moveState & MOVESTATE_IN_AIR) && (p->character == CHARACTER_KNUCKLES) && (p->trickDir == TRICK_DIR_FORWARD)) {
         p->variant++;
         PLAYERFN_SET(Player_802A3C4);
-    }
+    }*/
 }
 
 void DoTrickIfButtonPressed(Player *p)
@@ -6113,7 +6114,6 @@ bool32 Player_TryMidAirAction(Player *p)
                     p->charState = CHARSTATE_SOME_ATTACK;
                     CreateAmyAttackHeartEffect(AMY_HEART_PATTERN_C);
 
-                    song = SE_AMY_SUPER_HAMMER_ATTACK;
                 Player_TryMidAirAction_PlaySfx:
                     m4aSongNumStart(song);
                     // TODO / BUG?

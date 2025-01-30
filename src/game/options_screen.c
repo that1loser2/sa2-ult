@@ -19,6 +19,10 @@
 
 #include "constants/tilemaps.h"
 
+#include "game/course_select.h"
+#include "game/special_stage/main.h"
+#include "game/time_attack/mode_select.h"
+
 #define NUM_PLAYER_DATA_MENU_ITEMS 4
 
 struct TimeRecordDisplay {
@@ -237,6 +241,7 @@ static void Task_TimeRecordsScreenCreateTimesUI(void);
 static void TimeRecordsScreenInitRegisters(void);
 static void TimeRecordsScreenCreateCoursesViewBackgroundsUI(struct TimeRecordsScreen *);
 static void TimeRecordsScreenCreateCoursesViewUI(struct TimeRecordsScreen *);
+static void SpecialStageLevelSelectScreenCreateCoursesViewUI(struct TimeRecordsScreen *);
 
 static void Task_LanguageScreenFadeIn(void);
 static void LanguageScreenInitRegisters(struct LanguageScreen *);
@@ -1206,6 +1211,45 @@ void CreateTimeAttackLevelSelectScreen(bool16 isBossView, s16 selectedCharacter,
     TimeRecordsScreenInitRegisters();
     TimeRecordsScreenCreateCoursesViewBackgroundsUI(timeRecordsScreen);
     TimeRecordsScreenCreateCoursesViewUI(timeRecordsScreen);
+    m4aSongNumStart(MUS_TA_COURSE_SELECTION);
+}
+
+void CreateSpecialStageLevelSelectScreen(s16 selectedCharacter, s8 unused_currentLevel)
+{
+    struct Task *t = TaskCreate(Task_TimeRecordsScreenCreateTimesUI, sizeof(struct TimeRecordsScreen), 0x2000, TASK_x0004, NULL);
+    struct TimeRecordsScreen *timeRecordsScreen = TASK_DATA(t);
+    s16 i;
+
+    ReadAvailableCharacters(i, gLoadedSaveGame->unlockedCharacters);
+
+    timeRecordsScreen->playerDataMenu = 0;
+    timeRecordsScreen->timeRecords = EwramMalloc(sizeof(struct TimeRecords));
+    timeRecordsScreen->character = selectedCharacter;
+    timeRecordsScreen->zone = 0;
+    timeRecordsScreen->act = 0;
+    timeRecordsScreen->animFrame = 0;
+    timeRecordsScreen->unusedUnk708 = FALSE;
+    timeRecordsScreen->availableCharacters = i;
+
+    for (i = 0; i < NUM_CHARACTERS; i++) {
+        timeRecordsScreen->unlockedCourses[i] = gLoadedSaveGame->unlockedLevels[i];
+    }
+
+    timeRecordsScreen->language = LanguageIndex(gLoadedSaveGame->language);
+    timeRecordsScreen->isBossMode = TRUE;
+    timeRecordsScreen->view = TIME_RECORDS_SCREEN_VIEW_TIME_ATTACK;
+
+    if (timeRecordsScreen->language > NUM_LANGUAGES - 1) {
+        timeRecordsScreen->language = LanguageIndex(LANG_ENGLISH);
+    }
+
+    memcpy(timeRecordsScreen->timeRecords, &gLoadedSaveGame->timeRecords, sizeof(struct TimeRecords));
+
+    ResetProfileScreensVram();
+
+    TimeRecordsScreenInitRegisters();
+    TimeRecordsScreenCreateCoursesViewBackgroundsUI(timeRecordsScreen);
+    SpecialStageLevelSelectScreenCreateCoursesViewUI(timeRecordsScreen);
     m4aSongNumStart(MUS_TA_COURSE_SELECTION);
 }
 
@@ -4108,10 +4152,9 @@ static void TimeRecordsScreenCreateCoursesViewUI(struct TimeRecordsScreen *timeR
         // render act number
         sub_806A568(actText, RENDER_TARGET_SCREEN, spriteSize, titleDigit->unk0, 0x1000, 0x88, 0x20, 3, titleDigit->unk2, 0);
     } else {
-        // render "BOSS"
-        sub_806A568(actText, RENDER_TARGET_SCREEN, 0x14, 0x418, 0x1000, 0x4e, 0x20, 3, 9, 0);
+            // render "BOSS"
+            sub_806A568(actText, RENDER_TARGET_SCREEN, 0x14, 0x418, 0x1000, 0x4e, 0x20, 3, 9, 0);
     }
-
     if (!timeRecordsScreen->isBossMode) {
         zoneSubText = &sZoneNameTitles[language][timeRecordsScreen->zone];
     } else {
@@ -4121,7 +4164,49 @@ static void TimeRecordsScreenCreateCoursesViewUI(struct TimeRecordsScreen *timeR
     // Seems like a bug, this will potentially overflow when reading
     // 7 zones, as we could already be further
     spriteSize = MaxSpriteSize(zoneSubText, 7);
-    sub_806A568(zoneSubTitle, RENDER_TARGET_SCREEN, spriteSize, zoneSubText->unk0, 0x1000, 0x9a, 0x44, 3, zoneSubText->unk2, 0);
+    sub_806A568(zoneSubTitle, RENDER_TARGET_SCREEN, spriteSize, zoneSubText->unk0, 0x1000, 0x9a, 0x44, 3, zoneSubText->unk2, 0);  
+}
+
+static void SpecialStageLevelSelectScreenCreateCoursesViewUI(struct TimeRecordsScreen *timeRecordsScreen)
+{
+    Sprite *unk284 = timeRecordsScreen->timeRecordDisplays;
+    Sprite *zoneText = timeRecordsScreen->choiceViewItemsOrZoneTitle;
+    Sprite *actText = timeRecordsScreen->actTitle;
+    Sprite *zoneSubTitle = &timeRecordsScreen->choiceViewTitleOrZoneSubtitle;
+    Sprite *scrollArrow = timeRecordsScreen->choiceViewScrollArrows;
+
+    u8 language = timeRecordsScreen->language;
+    u8 zone = timeRecordsScreen->zone;
+    u8 act = timeRecordsScreen->act;
+
+    const struct UNK_080D95E8 *zoneSubText, *titleDigit, *r0;
+
+    s16 spriteSize;
+
+    sub_806A568(scrollArrow, RENDER_TARGET_SCREEN, 2, 0x41A, 0x1400, 0xE, 0x54, 2, 0, 0);
+    scrollArrow++;
+    sub_806A568(scrollArrow, RENDER_TARGET_SCREEN, 2, 0x41A, 0x1000, 0x9C, 0x54, 2, 0, 0);
+
+// Might not be matching because of something to do with the data
+#ifndef NON_MATCHING
+    r0 = sTimeRecordsZoneActTitleDigits;
+    spriteSize = MaxSpriteSize(r0, ARRAY_COUNT(sTimeRecordsZoneActTitleDigits));
+#else
+    spriteSize = MaxSpriteSize(sTimeRecordsZoneActTitleDigits, ARRAY_COUNT(sTimeRecordsZoneActTitleDigits));
+#endif
+    // render "ZONE"
+    sub_806A568(zoneText, RENDER_TARGET_SCREEN, 0x14, 0x418, 0x1000, 0x26, 0x4C, 3, 0, 0);
+#ifndef NON_MATCHING
+    asm("" : "=r"(r0));
+#endif
+
+    zoneText++;
+    titleDigit = &sTimeRecordsZoneActTitleDigits[zone];
+#ifndef NON_MATCHING
+    asm("" ::: "sl");
+#endif
+    // render zone number
+    sub_806A568(zoneText, RENDER_TARGET_SCREEN, spriteSize, titleDigit->unk0, 0x1000, 0x74, 0x4C, 3, titleDigit->unk2, 0);
 }
 
 static inline u16 *LoadCourseTimes(struct TimeRecordsScreen *timeRecordsScreen)
@@ -4332,12 +4417,12 @@ static void Task_TimeRecordsScreenCourseChangeAnim(void)
     timeRecordsScreen->animFrame++;
 
     for (i = 0; i < 3; i++) {
-        TimeRecordsScreenRenderTimeRowAnimFrame(i, timeRecordsScreen->animFrame + i * -8);
+        TimeRecordsScreenRenderTimeRowAnimFrame(i, timeRecordsScreen->animFrame + i * -1);
     }
 
     TimeRecordsScreenRenderCoursesViewUI(0);
 
-    if (timeRecordsScreen->animFrame > 31) {
+    if (timeRecordsScreen->animFrame > 11) {
         timeRecordsScreen->animFrame = 0;
         gCurTask->main = Task_TimeRecordsScreenCoursesViewMain;
     }
@@ -4500,39 +4585,37 @@ static void Task_TimeRecordsScreenCoursesViewMain(void)
         return;
     }
 
-    if (timeRecordsScreen->view != TIME_RECORDS_SCREEN_VIEW_TIME_ATTACK) {
-        if (gRepeatedKeys & (DPAD_DOWN | DPAD_UP)) {
-            s16 maxCharacterIndex = timeRecordsScreen->availableCharacters - 1;
-            if (maxCharacterIndex == 0) {
-                return;
-            }
-
-            m4aSongNumStart(SE_MENU_CURSOR_MOVE);
-
-            if (gRepeatedKeys & DPAD_UP) {
-                if (timeRecordsScreen->character != 0) {
-                    timeRecordsScreen->character--;
-                } else {
-                    timeRecordsScreen->character = maxCharacterIndex;
-                }
-            } else if (gRepeatedKeys & DPAD_DOWN) {
-                if (timeRecordsScreen->character < maxCharacterIndex) {
-                    timeRecordsScreen->character++;
-                } else {
-                    timeRecordsScreen->character = 0;
-                }
-            }
-
-            timeRecordsScreen->animFrame = 4;
-            gCurTask->main = Task_TimeRecordsScreenCharacterChangeAnimOut;
+    if (gRepeatedKeys & (DPAD_DOWN | DPAD_UP) && gGameMode != GAME_MODE_SPECIAL_STAGE) {
+        s16 maxCharacterIndex = timeRecordsScreen->availableCharacters - 1;
+        if (maxCharacterIndex == 0) {
             return;
         }
-    } else {
-        if (gPressedKeys & A_BUTTON) {
-            m4aSongNumStart(SE_SELECT);
-            Task_TimeRecordsScreenHandleCourseSelected();
-            return;
+
+        m4aSongNumStart(SE_MENU_CURSOR_MOVE);
+
+        if (gRepeatedKeys & DPAD_UP) {
+            if (timeRecordsScreen->character != 0) {
+                timeRecordsScreen->character--;
+            } else {
+                timeRecordsScreen->character = maxCharacterIndex;
+            }
+        } else if (gRepeatedKeys & DPAD_DOWN) {
+            if (timeRecordsScreen->character < maxCharacterIndex) {
+                timeRecordsScreen->character++;
+            } else {
+                timeRecordsScreen->character = 0;
+            }
         }
+
+        timeRecordsScreen->animFrame = 4;
+        gSelectedCharacter = timeRecordsScreen->character;
+        gCurTask->main = Task_TimeRecordsScreenCharacterChangeAnimOut;
+        return;
+    }
+    if (gPressedKeys & A_BUTTON) {
+        m4aSongNumStart(SE_SELECT);
+        Task_TimeRecordsScreenHandleCourseSelected();
+        return;
     }
 
     if (gPressedKeys & B_BUTTON) {
@@ -4581,14 +4664,13 @@ static void Task_TimeRecordsScreenHandleCourseChange(void)
         unkDC->variant = zoneTitleText->unk2;
         UpdateSpriteAnimation(unkDC);
     }
-
     // zone subtitle text
     if (!timeRecordsScreen->isBossMode) {
         zoneTitleText = &sZoneNameTitles[language][timeRecordsScreen->zone];
     } else {
         zoneTitleText = &sZoneBossTitles[language][timeRecordsScreen->zone];
     }
-
+        
     zoneSubtitle->graphics.anim = zoneTitleText->unk0;
     zoneSubtitle->variant = zoneTitleText->unk2;
     UpdateSpriteAnimation(zoneSubtitle);
@@ -4635,12 +4717,19 @@ static void Task_TimeRecordsScreenFadeToPrevious(void)
             if (availableCharacters == NUM_CHARACTERS) {
                 allCharactersUnlocked = TRUE;
             }
-            EwramFree(timeRecordsScreen->timeRecords);
-            TasksDestroyAll();
-            PAUSE_BACKGROUNDS_QUEUE();
-            gUnknown_03005390 = 0;
-            PAUSE_GRAPHICS_QUEUE();
-            CreateCharacterSelectionScreen(timeRecordsScreen->character, allCharactersUnlocked);
+            if(gGameMode == GAME_MODE_SPECIAL_STAGE) {
+                TaskDestroy(gCurTask);
+                gGameMode = GAME_MODE_SINGLE_PLAYER;
+                CreateCourseSelectionScreen(LEVEL_INDEX(ZONE_1, ACT_1), gLoadedSaveGame->unlockedLevels[gSelectedCharacter], 0);
+                break;
+            } else {
+                EwramFree(timeRecordsScreen->timeRecords);
+                TasksDestroyAll();
+                PAUSE_BACKGROUNDS_QUEUE();
+                gUnknown_03005390 = 0;
+                PAUSE_GRAPHICS_QUEUE();
+                CreateTimeAttackModeSelectionScreen();
+            }
             break;
     }
 }
@@ -4663,16 +4752,14 @@ static void TimeRecordsScreenRenderCoursesViewUI(u16 a)
         availableCourses = 1;
     }
 
-    for (i = 0; i < 3; i++, timeRecordDisplay++) {
-        DisplaySprite(timeRecordDisplay);
-    }
+    
 
     for (i = 0; i < 2; i++, zoneTitleElement++) {
         DisplaySprite(zoneTitleElement);
     }
 
     // No idea why j is reused here
-    j = timeRecordsScreen->view != TIME_RECORDS_SCREEN_VIEW_TIME_ATTACK && !a && timeRecordsScreen->availableCharacters > 1 ? 4 : 2;
+    j = gGameMode != GAME_MODE_SPECIAL_STAGE && !a && timeRecordsScreen->availableCharacters > 1 ? 4 : 2;
     visibleScrollArrows = timeRecordsScreen->view == TIME_RECORDS_SCREEN_VIEW_TIME_ATTACK && availableCourses < 2 ? 0 : j;
 
     for (i = 0; i < visibleScrollArrows; i++, scrollArrows++) {
@@ -4680,36 +4767,43 @@ static void TimeRecordsScreenRenderCoursesViewUI(u16 a)
         DisplaySprite(scrollArrows);
     }
 
-    if (!timeRecordsScreen->isBossMode) {
-        for (i = 0; i < 2; i++, actTitleElement++) {
+    if (gGameMode != GAME_MODE_SPECIAL_STAGE) {
+        if (!timeRecordsScreen->isBossMode) {
+            for (i = 0; i < 2; i++, actTitleElement++) {
+                DisplaySprite(actTitleElement);
+            }
+        } else {
             DisplaySprite(actTitleElement);
         }
-    } else {
-        DisplaySprite(actTitleElement);
+
+        DisplaySprite(zoneSubtitle);
+
+        for (i = 0; i < 3; i++, timeRecordDisplay++) {
+            DisplaySprite(timeRecordDisplay);
+        }
+
+        for (i = 0; i < 3; i++, timeRecord++) {
+            deliminator = timeRecord->deliminators;
+            minute = &timeRecord->minute;
+            secondDigit = timeRecord->seconds;
+            milliDigit = timeRecord->millis;
+
+            for (j = 0; j < 2; j++, deliminator++) {
+                DisplaySprite(deliminator);
+            }
+
+            DisplaySprite(minute);
+
+            for (j = 0; j < 2; j++, secondDigit++) {
+                DisplaySprite(secondDigit);
+            }
+
+            for (j = 0; j < 2; j++, milliDigit++) {
+                DisplaySprite(milliDigit);
+            }
+        }  
     }
-
-    DisplaySprite(zoneSubtitle);
-
-    for (i = 0; i < 3; i++, timeRecord++) {
-        deliminator = timeRecord->deliminators;
-        minute = &timeRecord->minute;
-        secondDigit = timeRecord->seconds;
-        milliDigit = timeRecord->millis;
-
-        for (j = 0; j < 2; j++, deliminator++) {
-            DisplaySprite(deliminator);
-        }
-
-        DisplaySprite(minute);
-
-        for (j = 0; j < 2; j++, secondDigit++) {
-            DisplaySprite(secondDigit);
-        }
-
-        for (j = 0; j < 2; j++, milliDigit++) {
-            DisplaySprite(milliDigit);
-        }
-    }
+    
 }
 
 static void CreateMultiplayerRecordsScreen(struct PlayerDataMenu *playerDataMenu)
@@ -6041,11 +6135,17 @@ static void Task_TimeRecordsScreenFadeOutToSelectedCourse(void)
         return;
     }
 
-    gCurrentLevel = LEVEL_INDEX(timeRecordsScreen->zone, timeRecordsScreen->isBossMode ? ACT_BOSS : timeRecordsScreen->act);
-
-    EwramFree(timeRecordsScreen->timeRecords);
-    TaskDestroy(gCurTask);
-    GameStageStart();
+    if (gGameMode == GAME_MODE_SPECIAL_STAGE) {
+        gCurrentLevel = LEVEL_INDEX(timeRecordsScreen->zone, timeRecordsScreen->act);
+        EwramFree(timeRecordsScreen->timeRecords);
+        TaskDestroy(gCurTask);
+        CreateSpecialStage(-1, -1);
+    } else {
+        gCurrentLevel = LEVEL_INDEX(timeRecordsScreen->zone, timeRecordsScreen->isBossMode ? ACT_BOSS : timeRecordsScreen->act);
+        EwramFree(timeRecordsScreen->timeRecords);
+        TaskDestroy(gCurTask);
+        GameStageStart();
+    }
 }
 
 static void TimeRecordsScreenHandleReturn(void)

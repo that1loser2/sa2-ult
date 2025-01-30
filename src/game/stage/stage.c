@@ -303,6 +303,13 @@ void Task_GameStage(void)
         if (!(gStageFlags & STAGE_FLAG__DISABLE_PAUSE_MENU) && (gPressedKeys & START_BUTTON) && !(gStageFlags & STAGE_FLAG__DEMO_RUNNING)) {
             CreatePauseMenu();
         }
+        if (!(gStageFlags & STAGE_FLAG__DISABLE_PAUSE_MENU) && (gPressedKeys & SELECT_BUTTON) && !(gStageFlags & STAGE_FLAG__DEMO_RUNNING)) {
+            TasksDestroyAll();
+            PAUSE_BACKGROUNDS_QUEUE();
+            gUnknown_03005390 = 0;
+            PAUSE_GRAPHICS_QUEUE();
+            GameStageStart();
+        }
         gStageTime++;
         timeStep = 1;
     } else {

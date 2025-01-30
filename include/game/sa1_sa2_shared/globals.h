@@ -15,12 +15,13 @@
 #elif (GAME == GAME_SA2)
 #define GAME_MODE_MULTI_PLAYER_COLLECT_RINGS 5
 #endif
+#define GAME_MODE_SPECIAL_STAGE 7
 
 #if (GAME == GAME_SA1)
 #define IS_SINGLE_PLAYER ((gGameMode == GAME_MODE_SINGLE_PLAYER) || (gGameMode == GAME_MODE_TIME_ATTACK))
 #elif (GAME == GAME_SA2)
 #define IS_SINGLE_PLAYER                                                                                                                   \
-    ((gGameMode == GAME_MODE_SINGLE_PLAYER) || (gGameMode == GAME_MODE_TIME_ATTACK) || (gGameMode == GAME_MODE_BOSS_TIME_ATTACK))
+    ((gGameMode == GAME_MODE_SINGLE_PLAYER) || (gGameMode == GAME_MODE_TIME_ATTACK) || (gGameMode == GAME_MODE_BOSS_TIME_ATTACK) || (gGameMode == GAME_MODE_SPECIAL_STAGE))
 #endif
 
 #define IS_MULTI_PLAYER (!(IS_SINGLE_PLAYER))
