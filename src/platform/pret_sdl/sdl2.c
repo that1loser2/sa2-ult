@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -13,6 +14,7 @@
 
 #include "global.h"
 #include "core.h"
+#include "multi_sio.h"
 #include "gba/defines.h"
 #include "gba/io_reg.h"
 #include "gba/types.h"
@@ -88,6 +90,7 @@ bool videoScaleChanged = false;
 bool isRunning = true;
 bool paused = false;
 bool stepOneFrame = false;
+bool headless = false;
 
 double lastGameTime = 0;
 double curGameTime = 0;
@@ -119,6 +122,21 @@ void Platform_free(void *ptr) { HeapFree(GetProcessHeap(), 0, ptr); }
 
 int main(int argc, char **argv)
 {
+    const char *headlessEnv = getenv("HEADLESS");
+
+    if (headlessEnv && strcmp(headlessEnv, "true") == 0) {
+        headless = true;
+    }
+
+    const char *parentEnv = getenv("SIO_PARENT");
+
+    if (parentEnv && strcmp(parentEnv, "true") == 0) {
+        SIO_MULTI_CNT->id = 0;
+        SIO_MULTI_CNT->si = 1;
+        SIO_MULTI_CNT->sd = 1;
+        SIO_MULTI_CNT->enable = false;
+    }
+
     // Open an output console on Windows
 #if (defined _WIN32) && (DEBUG != 0)
     AllocConsole();
@@ -127,6 +145,17 @@ int main(int argc, char **argv)
 #endif
 
     ReadSaveFile("sa2.sav");
+
+    // Prevent the multiplayer screen from being drawn ( see core.c:EngineInit() )
+    REG_RCNT = 0x8000;
+    REG_KEYINPUT = 0x3FF;
+
+    if (headless) {
+        // Required or it makes an infinite loop
+        cgb_audio_init(48000);
+        AgbMain();
+        return 1;
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -223,10 +252,6 @@ int main(int argc, char **argv)
 #if ENABLE_VRAM_VIEW
     VramDraw(vramTexture);
 #endif
-    // Prevent the multiplayer screen from being drawn ( see core.c:EngineInit() )
-    REG_RCNT = 0x8000;
-    REG_KEYINPUT = 0x3FF;
-
     AgbMain();
 
     return 0;
@@ -239,6 +264,22 @@ bool newFrameRequested = FALSE;
 // the loop via a return
 void VBlankIntrWait(void)
 {
+    // ((struct MultiSioPacket *)gMultiSioArea.nextSendBufp)
+#define HANDLE_VBLANK_INTRS()                                                                                                              \
+    ({                                                                                                                                     \
+        REG_DISPSTAT |= INTR_FLAG_VBLANK;                                                                                                  \
+        RunDMAs(DMA_VBLANK);                                                                                                               \
+        if (REG_DISPSTAT & DISPSTAT_VBLANK_INTR)                                                                                           \
+            gIntrTable[INTR_INDEX_VBLANK]();                                                                                               \
+        REG_DISPSTAT &= ~INTR_FLAG_VBLANK;                                                                                                 \
+    })
+
+    if (headless) {
+        REG_VCOUNT = DISPLAY_HEIGHT + 1;
+        HANDLE_VBLANK_INTRS();
+        return;
+    }
+
     bool frameAvailable = TRUE;
 
     while (isRunning) {
@@ -274,15 +315,7 @@ void VBlankIntrWait(void)
                     VDraw(sdlTexture);
                     frameAvailable = FALSE;
 
-                    REG_DISPSTAT |= INTR_FLAG_VBLANK;
-
-                    // TODO(Jace): I think this should be DMA_VBLANK.
-                    //             If not, and it is HBLANK instead, add a note here, why it is!
-                    RunDMAs(DMA_VBLANK);
-
-                    if (REG_DISPSTAT & DISPSTAT_VBLANK_INTR)
-                        gIntrTable[INTR_INDEX_VBLANK]();
-                    REG_DISPSTAT &= ~INTR_FLAG_VBLANK;
+                    HANDLE_VBLANK_INTRS();
 
                     accumulator -= dt;
                 } else {
@@ -320,6 +353,7 @@ void VBlankIntrWait(void)
     SDL_DestroyWindow(sdlWindow);
     SDL_Quit();
     exit(0);
+#undef RUN_VBLANK_INTRS
 }
 
 static void ReadSaveFile(char *path)
@@ -392,6 +426,9 @@ static SDL_DisplayMode sdlDispMode = { 0 };
 
 void Platform_QueueAudio(const void *data, uint32_t bytesCount)
 {
+    if (headless) {
+        return;
+    }
     // Reset the audio buffer if we are 10 frames out of sync
     // If this happens it suggests there was some OS level lag
     // in playing audio. The queue length should remain stable at < 10 otherwise
@@ -1794,7 +1831,7 @@ void VDraw(SDL_Texture *texture)
     memset(gameImage, 0, sizeof(gameImage));
     DrawFrame(gameImage);
     SDL_UpdateTexture(texture, NULL, gameImage, DISPLAY_WIDTH * sizeof(Uint16));
-    REG_VCOUNT = 161; // prep for being in VBlank period
+    REG_VCOUNT = DISPLAY_HEIGHT + 1; // prep for being in VBlank period
 }
 
 u8 BinToBcd(u8 bin)

@@ -1,7 +1,9 @@
 #ifndef GUARD_MAIN_H
 #define GUARD_MAIN_H
 // for memcpy
+#ifndef GEN_CTX
 #include <string.h>
+#endif
 
 #include "global.h"
 #include "sprite.h"
@@ -265,7 +267,6 @@ extern u16 gBgCntRegs[4];
 //       [4]{s16 x, s16 y}
 extern s16 gBgScrollRegs[NUM_BACKGROUNDS][2];
 
-extern OamData gUnknown_030022C8;
 extern OamData gOamBuffer2[OAM_ENTRY_COUNT];
 extern OamData gOamBuffer[OAM_ENTRY_COUNT];
 
@@ -340,8 +341,10 @@ extern struct GraphicsData gVramGraphicsCopyQueueBuffer[32];
 
 extern void *gUnknown_030022AC;
 extern void *gUnknown_030022C0;
+#if (GAME == GAME_SA2)
 extern s16 gMosaicReg;
 extern u8 gUnknown_030026F4;
+#endif
 extern u16 gUnknown_03002820;
 extern u8 gUnknown_03002874;
 extern void *gUnknown_03002878;
