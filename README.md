@@ -18,7 +18,16 @@
 
 > :warning: **This project is not completed and still under active development**
 
-This is a work in progress matching decompilation of Sonic Advance 2
+This is a work in progress mod using the sa2 decomp.
+
+## Mod Changes
+* Instant Restart Button (Select)
+* Special Stage Level Select (L + R on World Map with having all 7 Emeralds)
+* Improved Time Attack Menus
+* Character Changes
+* Many more QoL Changes
+
+## What it Builds
 
 It so far builds the following ROMs:
 * [**sa2.gba**](https://datomatic.no-intro.org/index.php?page=show_record&s=23&n=0890) `sha1: 7bcd6a07af7c894746fa28073fe0c0e34408022d` (USA) (En,Ja,Fr,De,Es,It)
